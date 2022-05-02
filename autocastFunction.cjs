@@ -9,8 +9,8 @@ module.exports = function autocastFunction(value) {
   if (lowercaseValue === "null") return null;
   if (lowercaseValue === "undefined") return undefined;
 
-  const numberValue = parseFloat(lowercaseValue);
-  if (!Number.isNaN(numberValue)) return numberValue;
+  const numberValue = Number(lowercaseValue);
+  if (!Number.isNaN(numberValue) && value !== "") return numberValue;
 
   return value;
 };
