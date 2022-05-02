@@ -1,43 +1,39 @@
-module.exports = {};
+const { readFile } = require("fs/promises");
+const path = require("path");
+const autocastFunction = require("./autocastFunction.cjs");
+const choices = require("./choices.cjs");
+const ConfigValidationError = require("./ConfigValidationError.cjs");
+const envParser = require("./envParser.cjs");
+const jsonParser = require("./jsonParser.cjs");
 
-module.exports.defaultOptions = Object.freeze({
-  autocast: true,
-  validate: () => true,
-});
-
-module.exports.defaultCast = (value) => value;
-
-module.exports.autocastFunction = (value) => {
-  if (typeof value !== "string") return value;
-
-  const lowercaseValue = value.trim().toLowerCase();
-
-  if (lowercaseValue === "true") return true;
-  if (lowercaseValue === "false") return false;
-
-  if (lowercaseValue === "null") return null;
-  if (lowercaseValue === "undefined") return undefined;
-
-  const numberValue = parseFloat(lowercaseValue);
-  if (!Number.isNaN(numberValue)) return numberValue;
-
-  return value;
+const AsyncFunction = (async () => {}).constructor;
+const defaultValidate = () => true;
+const defaultAutocast = true;
+const parsers = {
+  ".json": jsonParser,
+  ".env": envParser,
 };
 
-function rawConfig(options) {
+/**
+ * @param {T} value
+ * @template T
+ * @returns {T}
+ */
+const defaultCast = (value) => value;
+
+function rawConfig(options, env) {
   const path = options.path;
   const defaultValue = options.defaultValue;
-  const cast = options.cast;
-  const validate = options.validate ?? module.exports.defaultOptions.validate;
-  const autocast = options.autocast ?? module.exports.defaultOptions.autocast;
-
-  const value = process.env[path] ?? defaultValue;
+  const autocast = options.autocast ?? defaultAutocast;
   const castFunction =
-    cast ??
-    (autocast ? module.exports.autocastFunction : module.exports.defaultCast);
+    options.cast ?? (autocast ? autocastFunction : defaultCast);
+  const validate = options.validate ?? defaultValidate;
+
+  const value = env[path] ?? defaultValue;
+
   const castedValue = castFunction(value);
   if (!validate(castedValue))
-    throw new module.exports.ConfigValidationError(
+    throw new ConfigValidationError(
       `Ivalid value for "${path}", got ${value}`,
       value,
       castedValue,
@@ -46,25 +42,53 @@ function rawConfig(options) {
   return castedValue;
 }
 
-module.exports.config = function config(
-  params,
-  defaultValue,
-  cast,
-  validate,
-  autocast
-) {
-  if (typeof params === "string")
-    return rawConfig({ path: params, defaultValue, cast, validate, autocast });
-  return rawConfig(params);
-};
+function config(env) {
+  return (params, defaultValue, cast, validate, autocast) => {
+    if (typeof params === "string")
+      return rawConfig(
+        { path: params, defaultValue, cast, validate, autocast },
+        env
+      );
+    return rawConfig(params, env);
+  };
+}
 
-module.exports.ConfigValidationError = class ConfigValidationError extends (
-  Error
-) {
-  constructor(message, value, castedValue, castFunction) {
-    super(message);
-    this.value = value;
-    this.castedValue = castedValue;
-    this.castFunction = castFunction;
-  }
+/**
+ *
+ * @param {import("fs").PathLike} filename
+ * @returns {(content: Buffer) => Record<string, string> | Promise<Record<string, string>>}
+ */
+function getFileParser(filename) {
+  const extension = path.extname(filename.toString()).toLowerCase();
+  const parser = parsers[extension];
+  if (!parser)
+    throw new RangeError(
+      `Parser for "${extension}" is not defined. Please, pass your custom parser for it`
+    );
+  return parser;
+}
+
+/**
+ *
+ * @param {import('fs').PathLike} filename
+ * @param {(content: Buffer) => Record<string, string> | Promise<Record<string, string>>} [parser]
+ */
+async function makeConfig(filename, parser) {
+  const fileContent = await readFile(filename);
+  const fileParser = parser ?? getFileParser(filename);
+
+  const result = await (fileParser instanceof AsyncFunction
+    ? fileParser(fileContent)
+    : Promise.resolve(fileParser(fileContent)));
+
+  const env = { ...process.env, ...result };
+
+  return config(env);
+}
+
+module.exports = {
+  ConfigValidationError,
+  config: config(process.env),
+  choices,
+  makeConfig,
 };
