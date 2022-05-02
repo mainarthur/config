@@ -1,7 +1,7 @@
-import { config } from "@masterarthur/config";
-import assert from "assert/strict";
+const { config } = require("@masterarthur/config");
+const assert = require("assert/strict");
 
-console.log("Starting tests in MJS");
+console.log("Starting tests in CJS");
 
 // Not found
 assert.equal(config("NOT_FOUND"), undefined);
@@ -68,4 +68,4 @@ assert.equal(config({ path: "F" }), "TEST");
 assert.equal(config("NOT_FOUND", "TEST"), "TEST");
 assert.equal(config({ path: "NOT_FOUND", defaultValue: "TEST" }), "TEST");
 
-console.log("All good in MJS");
+console.log("All good in CJS");
