@@ -19,8 +19,18 @@
   ],
   "author": "masterarthur",
   "license": "ISC",
+  "types": "./types.d.ts",
   "bugs": {
     "url": "https://github.com/mainarthur/config/issues"
   },
-  "homepage": "https://github.com/mainarthur/config#readme"
+  "exports": {
+    ".": {
+      "import": "./index.mjs",
+      "default": "./index.cjs"
+    }
+  },
+  "homepage": "https://github.com/mainarthur/config#readme",
+  "devDependencies": {
+    "@types/node": "^17.0.31"
+  }
 }
