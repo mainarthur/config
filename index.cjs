@@ -8,6 +8,8 @@ module.exports.defaultOptions = Object.freeze({
 module.exports.defaultCast = (value) => value;
 
 module.exports.autocastFunction = (value) => {
+  if (typeof value !== "string") return value;
+
   const lowercaseValue = value.trim().toLowerCase();
 
   if (lowercaseValue === "true") return true;
