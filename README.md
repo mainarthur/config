@@ -1,6 +1,6 @@
 # @masterarthur/config
 
-Lightweight Javascript utility zero-dependecy library for easy configuration for nodejs apps
+Lightweight zero-dependecy Javascript library for easy configuration for nodejs apps
 
 ## Instalation
 
@@ -20,9 +20,10 @@ await mongoose.connect(connectionString);
 ```
 
 ```js
-import { config } from "@masterarthur/config";
+import { makeConfig } from "@masterarthur/config";
 import express from "express";
 
+const config = await makeConfig(".env");
 const app = express();
 // process.env.APP_PORT = "3000"
 const port = config("APP_PORT"); // 3000
@@ -84,3 +85,10 @@ By default `config` function uses `process.env` to get data and you are able to 
 | cast         | `Function` | function that casts string value of env variable to type we need                                                           |
 | validate     | `Function` | Function that validates casted value and if it returns false config function will throw error                              |
 | autocast     | `boolean`  | by default true, if it's true config function will automaticly cast value of env variable to number/boolean/null/undefined |
+
+### makeConfig arguments
+
+| Param    | Type                          | Description                                                                                                   |
+| -------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| filename | `PathLike`                    | Path to configuration file                                                                                    |
+| parser   | `Function` or `AsyncFunction` | by default parses .env and .json files, in case you need parse custom file type you need pass your own parser |
